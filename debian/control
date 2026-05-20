@@ -1,0 +1,34 @@
+Source: ricoh-spc240sf-driver
+Section: text
+Priority: optional
+Maintainer: Ricoh SP C240SF Linux project <noreply@example.com>
+Build-Depends:
+ debhelper-compat (= 12),
+ libcups2-dev,
+ libcupsimage2-dev,
+ libjbig-dev,
+ pkg-config
+Standards-Version: 4.5.0
+Homepage: https://github.com/local/ricoh-spc240sf-driver
+
+Package: ricoh-spc240sf-driver
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ cups,
+ cups-filters,
+ libjbig0
+Recommends: avahi-daemon
+Description: Linux CUPS driver for the Ricoh Aficio SP C240SF (DDST/GDI)
+ Native C CUPS filter that converts CUPS raster input to the
+ proprietary DDST stream understood by the Ricoh Aficio SP C240SF
+ color laser MFP. Includes a PPD with the printer's paper sizes,
+ trays, color modes, and duplex options.
+ .
+ The filter is multi-threaded: it encodes the four CMYK JBIG planes
+ of each band in parallel, so a 600 dpi A4 colour page is converted
+ in well under a second on a modern CPU.
+ .
+ A udev rule auto-registers the printer in CUPS when plugged in via
+ USB, so most users won't need to run lpadmin manually.

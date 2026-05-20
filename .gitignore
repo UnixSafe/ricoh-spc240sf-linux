@@ -1,0 +1,33 @@
+# Build artifacts
+rastertoddst
+*.o
+*.a
+*.so
+*.so.*
+
+# Debian build outputs (created in the parent directory by dpkg-buildpackage)
+debian/files
+debian/.debhelper/
+debian/ricoh-spc240sf-driver/
+debian/*.debhelper.log
+debian/*.substvars
+debian/debhelper-build-stamp
+*.deb
+*.buildinfo
+*.changes
+*.dsc
+*.tar.*
+
+# Editor / OS noise
+.DS_Store
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# Test artifacts
+*.ddst
+*.raster
+*.pbm
+*.jbig

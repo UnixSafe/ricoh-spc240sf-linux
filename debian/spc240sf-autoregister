@@ -1,0 +1,31 @@
+#!/bin/sh
+# Helper invoked by the udev rule when an SP C240SF appears on USB.
+#
+# Idempotent: if a queue already exists for this device, does nothing.
+
+set -e
+
+PPD="/usr/share/cups/model/Ricoh-Aficio_SP_C240SF-rastertoddst.ppd"
+QUEUE="RicohSPC240SF"
+
+# Wait briefly for CUPS to enumerate the USB scheme.
+for _ in 1 2 3 4 5; do
+    URI=$(lpinfo -v 2>/dev/null \
+        | awk '/^direct usb:.*SP_C240SF/ || /^direct usb:.*C240/ {print $2; exit}')
+    [ -n "$URI" ] && break
+    sleep 1
+done
+
+[ -z "$URI" ] && exit 0   # device not discoverable yet; udev will retry
+
+# Already registered?
+if lpstat -v 2>/dev/null | grep -q "device for $QUEUE:"; then
+    exit 0
+fi
+
+lpadmin -p "$QUEUE" -E -v "$URI" -P "$PPD" \
+    -o printer-is-shared=false -o printer-error-policy=retry-current-job \
+    || true
+
+logger -t spc240sf-autoregister "registered $QUEUE -> $URI"
+exit 0

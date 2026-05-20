@@ -1,0 +1,141 @@
+*PPD-Adobe: "4.3"
+*% PPD for the Ricoh Aficio SP C240SF on Linux (CUPS) using rastertoddst.
+*% Reverse-engineered DDST/GDI implementation, 2026-05-20.
+*FormatVersion: "4.3"
+*FileVersion: "1.0"
+*LanguageVersion: English
+*LanguageEncoding: ISOLatin1
+*PCFileName: "RICOHC24.PPD"
+*Product: "(Ricoh Aficio SP C240SF)"
+*Manufacturer: "Ricoh"
+*ModelName: "Ricoh Aficio SP C240SF"
+*ShortNickName: "Ricoh Aficio SP C240SF"
+*NickName: "Ricoh Aficio SP C240SF DDST (rastertoddst)"
+*PSVersion: "(3010.000) 0"
+*LanguageLevel: "3"
+*ColorDevice: True
+*DefaultColorSpace: RGB
+*FileSystem: False
+*Throughput: "16"
+*LandscapeOrientation: Plus90
+*TTRasterizer: Type42
+
+*cupsVersion: 1.4
+*cupsModelNumber: 0
+*cupsManualCopies: True
+*cupsFilter: "application/vnd.cups-raster 0 rastertoddst"
+
+*% --- Resolution ----------------------------------------------------------
+*OpenUI *Resolution/Output Resolution: PickOne
+*OrderDependency: 10 AnySetup *Resolution
+*DefaultResolution: 600dpi
+*Resolution 600dpi/600 dpi: "<</HWResolution[600 600]>>setpagedevice"
+*CloseUI: *Resolution
+
+*% --- Color mode ----------------------------------------------------------
+*OpenUI *ColorModel/Color Mode: PickOne
+*OrderDependency: 10 AnySetup *ColorModel
+*DefaultColorModel: RGB
+*ColorModel Gray/Grayscale: "<</cupsColorSpace 3/cupsBitsPerColor 8/cupsBitsPerPixel 8/cupsColorOrder 0/cupsNumColors 1>>setpagedevice"
+*ColorModel RGB/Color: "<</cupsColorSpace 1/cupsBitsPerColor 8/cupsBitsPerPixel 24/cupsColorOrder 0/cupsNumColors 3>>setpagedevice"
+*CloseUI: *ColorModel
+
+*% --- Duplex --------------------------------------------------------------
+*OpenUI *Duplex/2-Sided Printing: PickOne
+*OrderDependency: 20 AnySetup *Duplex
+*DefaultDuplex: None
+*Duplex None/Off: "<</Duplex false>>setpagedevice"
+*Duplex DuplexNoTumble/Long Edge: "<</Duplex true/Tumble false>>setpagedevice"
+*Duplex DuplexTumble/Short Edge: "<</Duplex true/Tumble true>>setpagedevice"
+*CloseUI: *Duplex
+
+*% --- Paper sources -------------------------------------------------------
+*OpenUI *InputSlot/Paper Source: PickOne
+*OrderDependency: 30 AnySetup *InputSlot
+*DefaultInputSlot: Tray1
+*InputSlot Tray1/Tray 1: "<</MediaPosition 1>>setpagedevice"
+*InputSlot Bypass/Bypass Tray: "<</MediaPosition 4>>setpagedevice"
+*CloseUI: *InputSlot
+
+*% --- Media size ----------------------------------------------------------
+*OpenUI *PageSize/Media Size: PickOne
+*OrderDependency: 40 AnySetup *PageSize
+*DefaultPageSize: A4
+*PageSize A4/A4: "<</PageSize[595 842]/ImagingBBox null>>setpagedevice"
+*PageSize Letter/US Letter: "<</PageSize[612 792]/ImagingBBox null>>setpagedevice"
+*PageSize Legal/US Legal: "<</PageSize[612 1008]/ImagingBBox null>>setpagedevice"
+*PageSize A5/A5: "<</PageSize[420 595]/ImagingBBox null>>setpagedevice"
+*PageSize B5/B5 JIS: "<</PageSize[516 729]/ImagingBBox null>>setpagedevice"
+*PageSize B6/B6 JIS: "<</PageSize[363 516]/ImagingBBox null>>setpagedevice"
+*PageSize A6/A6: "<</PageSize[298 420]/ImagingBBox null>>setpagedevice"
+*PageSize Executive/Executive: "<</PageSize[522 756]/ImagingBBox null>>setpagedevice"
+*PageSize Env10/Envelope #10: "<</PageSize[297 684]/ImagingBBox null>>setpagedevice"
+*PageSize Monarch/Envelope Monarch: "<</PageSize[279 540]/ImagingBBox null>>setpagedevice"
+*PageSize DL/Envelope DL: "<</PageSize[312 624]/ImagingBBox null>>setpagedevice"
+*PageSize C5/Envelope C5: "<</PageSize[459 649]/ImagingBBox null>>setpagedevice"
+*PageSize C6/Envelope C6: "<</PageSize[323 459]/ImagingBBox null>>setpagedevice"
+*PageSize Postcard/Postcard: "<</PageSize[284 419]/ImagingBBox null>>setpagedevice"
+*CloseUI: *PageSize
+
+*OpenUI *PageRegion: PickOne
+*OrderDependency: 40 AnySetup *PageRegion
+*DefaultPageRegion: A4
+*PageRegion A4/A4: "<</PageSize[595 842]/ImagingBBox null>>setpagedevice"
+*PageRegion Letter/US Letter: "<</PageSize[612 792]/ImagingBBox null>>setpagedevice"
+*PageRegion Legal/US Legal: "<</PageSize[612 1008]/ImagingBBox null>>setpagedevice"
+*PageRegion A5/A5: "<</PageSize[420 595]/ImagingBBox null>>setpagedevice"
+*PageRegion B5/B5 JIS: "<</PageSize[516 729]/ImagingBBox null>>setpagedevice"
+*PageRegion B6/B6 JIS: "<</PageSize[363 516]/ImagingBBox null>>setpagedevice"
+*PageRegion A6/A6: "<</PageSize[298 420]/ImagingBBox null>>setpagedevice"
+*PageRegion Executive/Executive: "<</PageSize[522 756]/ImagingBBox null>>setpagedevice"
+*PageRegion Env10/Envelope #10: "<</PageSize[297 684]/ImagingBBox null>>setpagedevice"
+*PageRegion Monarch/Envelope Monarch: "<</PageSize[279 540]/ImagingBBox null>>setpagedevice"
+*PageRegion DL/Envelope DL: "<</PageSize[312 624]/ImagingBBox null>>setpagedevice"
+*PageRegion C5/Envelope C5: "<</PageSize[459 649]/ImagingBBox null>>setpagedevice"
+*PageRegion C6/Envelope C6: "<</PageSize[323 459]/ImagingBBox null>>setpagedevice"
+*PageRegion Postcard/Postcard: "<</PageSize[284 419]/ImagingBBox null>>setpagedevice"
+*CloseUI: *PageRegion
+
+*DefaultImageableArea: A4
+*ImageableArea A4: "12 12 583 830"
+*ImageableArea Letter: "12 12 600 780"
+*ImageableArea Legal: "12 12 600 996"
+*ImageableArea A5: "12 12 408 583"
+*ImageableArea B5: "12 12 504 717"
+*ImageableArea B6: "12 12 351 504"
+*ImageableArea A6: "12 12 286 408"
+*ImageableArea Executive: "12 12 510 744"
+*ImageableArea Env10: "12 12 285 672"
+*ImageableArea Monarch: "12 12 267 528"
+*ImageableArea DL: "12 12 300 612"
+*ImageableArea C5: "12 12 447 637"
+*ImageableArea C6: "12 12 311 447"
+*ImageableArea Postcard: "12 12 272 407"
+
+*DefaultPaperDimension: A4
+*PaperDimension A4: "595 842"
+*PaperDimension Letter: "612 792"
+*PaperDimension Legal: "612 1008"
+*PaperDimension A5: "420 595"
+*PaperDimension B5: "516 729"
+*PaperDimension B6: "363 516"
+*PaperDimension A6: "298 420"
+*PaperDimension Executive: "522 756"
+*PaperDimension Env10: "297 684"
+*PaperDimension Monarch: "279 540"
+*PaperDimension DL: "312 624"
+*PaperDimension C5: "459 649"
+*PaperDimension C6: "323 459"
+*PaperDimension Postcard: "284 419"
+
+*% --- Media type ----------------------------------------------------------
+*OpenUI *MediaType/Media Type: PickOne
+*OrderDependency: 50 AnySetup *MediaType
+*DefaultMediaType: Plain
+*MediaType Plain/Plain Paper: "<</cupsMediaType 0>>setpagedevice"
+*MediaType Thick/Thick Paper: "<</cupsMediaType 1>>setpagedevice"
+*MediaType Thin/Thin Paper: "<</cupsMediaType 2>>setpagedevice"
+*MediaType Recycled/Recycled Paper: "<</cupsMediaType 3>>setpagedevice"
+*MediaType Envelope/Envelope: "<</cupsMediaType 4>>setpagedevice"
+*MediaType Label/Labels: "<</cupsMediaType 5>>setpagedevice"
+*CloseUI: *MediaType

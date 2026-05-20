@@ -1,0 +1,27 @@
+#!/bin/sh
+# prerm — runs before the package is removed.
+#
+# Drops any printer queues that point at our PPD so removal is clean.
+
+set -e
+
+PPD_REF="/usr/share/cups/model/Ricoh-Aficio_SP_C240SF-rastertoddst.ppd"
+
+case "$1" in
+    remove|purge|upgrade|deconfigure)
+        if [ -x "$(command -v lpstat)" ] && [ -x "$(command -v lpadmin)" ]; then
+            queues=$(lpstat -v 2>/dev/null | awk -F'[: ]' '/device for/ {print $3}')
+            for q in $queues; do
+                ppd=$(lpoptions -p "$q" 2>/dev/null | tr ' ' '\n' \
+                       | awk -F= '/^printer-ppd/ {print $2}')
+                if [ "$ppd" = "$PPD_REF" ]; then
+                    lpadmin -x "$q" || true
+                fi
+            done
+        fi
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

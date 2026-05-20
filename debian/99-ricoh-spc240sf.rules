@@ -1,0 +1,17 @@
+# Auto-register the Ricoh Aficio SP C240SF in CUPS when plugged via USB.
+#
+# Vendor 05CA = Ricoh. Product IDs collected from the Windows INF:
+#   SPC240SF2691, SPC240SBCEE — at least one of these maps to the
+#   physical product id reported on USB enumeration. The script below
+#   uses a generic "Ricoh + SP C240SF" name match for safety.
+
+ACTION=="add", SUBSYSTEM=="usb", \
+    ATTR{idVendor}=="05ca", \
+    ATTRS{product}=="*SP C240SF*", \
+    RUN+="/usr/lib/cups/spc240sf-autoregister %k"
+
+ACTION=="add", SUBSYSTEM=="usb", \
+    ATTR{idVendor}=="05ca", \
+    ATTRS{manufacturer}=="RICOH", \
+    ATTRS{product}=="*C240*", \
+    RUN+="/usr/lib/cups/spc240sf-autoregister %k"

@@ -1,0 +1,11 @@
+ricoh-spc240sf-driver (1.0.0-1) unstable; urgency=medium
+
+  * Initial release.
+  * Native C CUPS filter (rastertoddst) producing the DDST stream
+    consumed by the Ricoh Aficio SP C240SF.
+  * Multi-threaded JBIG encoding of the four CMYK planes per band.
+  * PPD with A4/Letter/Legal/A5/B5/B6/A6/Executive/envelopes/postcard,
+    duplex, two paper trays, plain/thick/thin/recycled media.
+  * udev rule auto-registers the printer in CUPS on USB plug.
+
+ -- Ricoh SP C240SF Linux project <noreply@example.com>  Wed, 20 May 2026 18:00:00 +0000

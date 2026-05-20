@@ -1,0 +1,26 @@
+#!/bin/sh
+# postinst — runs after the package is unpacked.
+#
+# Reloads cups so the new PPD is discoverable; restarts udev so the
+# hotplug rule is active for already-connected printers.
+
+set -e
+
+case "$1" in
+    configure)
+        # Reload udev so the auto-register rule is active even without
+        # a replug.
+        if command -v udevadm >/dev/null 2>&1; then
+            udevadm control --reload-rules || true
+            udevadm trigger --subsystem-match=usb --action=add || true
+        fi
+        # Restart cups so it picks up the new PPD.
+        if command -v systemctl >/dev/null 2>&1; then
+            systemctl reload-or-restart cups.service || true
+        fi
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

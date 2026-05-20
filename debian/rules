@@ -1,0 +1,19 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_install:
+	dh_auto_install
+	install -d debian/ricoh-spc240sf-driver/usr/lib/cups/filter
+	install -d debian/ricoh-spc240sf-driver/usr/lib/cups
+	install -d debian/ricoh-spc240sf-driver/usr/share/cups/model
+	install -d debian/ricoh-spc240sf-driver/lib/udev/rules.d
+	install -m 0755 rastertoddst \
+	    debian/ricoh-spc240sf-driver/usr/lib/cups/filter/rastertoddst
+	install -m 0755 debian/spc240sf-autoregister \
+	    debian/ricoh-spc240sf-driver/usr/lib/cups/spc240sf-autoregister
+	install -m 0644 Ricoh-Aficio_SP_C240SF-rastertoddst.ppd \
+	    debian/ricoh-spc240sf-driver/usr/share/cups/model/
+	install -m 0644 debian/99-ricoh-spc240sf.rules \
+	    debian/ricoh-spc240sf-driver/lib/udev/rules.d/99-ricoh-spc240sf.rules
