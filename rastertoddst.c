@@ -44,28 +44,43 @@
 
 #define BAND_HEIGHT 256u  /* lines per band */
 
-/* Media size codes (byte at GDIP+0x21). */
+/* Media size codes (byte at GDIP+0x08). */
 struct media_code {
     const char *name;
     uint8_t     code;
 };
 
 static const struct media_code MEDIA_TABLE[] = {
-    {"A4",        0x0D},
-    {"Letter",    0x58},
-    {"Legal",     0x10},
-    {"A5",        0x0F},
-    {"B5",        0x0E},
-    {"Executive", 0x14},
-    {"A6",        0x25},
-    {"Env10",     0x1B},
-    {"Monarch",   0x1C},
-    {"DL",        0x1F},
-    {"C5",        0x5C},
-    {"C6",        0x5D},
-    {"B6",        0x2B},
-    {"Postcard",  0x45},
-    {"Custom",    0xFF},
+    {"Letter",     0x01},
+    {"Legal",      0x05},
+    {"Executive",  0x07},
+    {"A3",         0x08},
+    {"A4",         0x09},
+    {"A5",         0x0B},
+    {"A6",         0x46},
+    {"B4",         0x0C},
+    {"B5",         0x0D}, /* JIS B5 */
+    {"JISB5",      0x0D},
+    {"B6",         0x58}, /* JIS B6 */
+    {"FS",         0x10},
+    {"Folio",      0x0F},
+    {"Foolscap",   0x0E},
+    {"Env10",      0x14},
+    {"Monarch",    0x25},
+    {"EnvMonarch", 0x25},
+    {"DL",         0x1B}, /* EnvDL */
+    {"EnvDL",      0x1B},
+    {"C5",         0x1C}, /* EnvC5 */
+    {"EnvC5",      0x1C},
+    {"C6",         0x1F}, /* EnvC6 */
+    {"EnvC6",      0x1F},
+    {"Ledger",     0x11},
+    {"HalfLetter", 0x06},
+    {"Kai8",       0x5C},
+    {"Kai16",      0x5D},
+    {"Postcard",   0x2B},
+    {"ReplyPaid",  0x45},
+    {"Custom",     0xFF},
     {NULL, 0},
 };
 
@@ -74,7 +89,70 @@ static uint8_t media_code_for(const char *name)
     for (const struct media_code *m = MEDIA_TABLE; m->name; m++)
         if (strcasecmp(m->name, name) == 0)
             return m->code;
-    return MEDIA_TABLE[0].code; /* A4 fallback */
+    return 0x09; /* A4 fallback (code 0x09) */
+}
+
+static uint8_t tray_code_for(const char *name)
+{
+    if (strcasecmp(name, "Automatic") == 0 || strcasecmp(name, "Auto") == 0)
+        return 0x00;
+    if (strcasecmp(name, "Manual") == 0 || strcasecmp(name, "Bypass") == 0)
+        return 0x01;
+    if (strcasecmp(name, "Tray1") == 0 || strcasecmp(name, "Tray 1") == 0 || strcasecmp(name, "1") == 0)
+        return 0x02;
+    if (strcasecmp(name, "Tray2") == 0 || strcasecmp(name, "Tray 2") == 0 || strcasecmp(name, "2") == 0)
+        return 0x03;
+    if (strcasecmp(name, "Tray3") == 0 || strcasecmp(name, "Tray 3") == 0 || strcasecmp(name, "3") == 0)
+        return 0x04;
+    if (strcasecmp(name, "Tray4") == 0 || strcasecmp(name, "Tray 4") == 0 || strcasecmp(name, "4") == 0)
+        return 0x05;
+    return 0x00; /* default automatic */
+}
+
+static uint8_t paper_type_code_for(const char *name)
+{
+    if (strcasecmp(name, "PlainRecycled") == 0) return 0x00;
+    if (strcasecmp(name, "Plain") == 0 || strcasecmp(name, "Plain Paper") == 0 || strcasecmp(name, "Normal") == 0) return 0x01;
+    if (strcasecmp(name, "Recycled") == 0 || strcasecmp(name, "Recycled Paper") == 0) return 0x02;
+    if (strcasecmp(name, "Color") == 0 || strcasecmp(name, "Colour") == 0) return 0x03;
+    if (strcasecmp(name, "Letterhead") == 0) return 0x04;
+    if (strcasecmp(name, "Preprinted") == 0) return 0x05;
+    if (strcasecmp(name, "Prepunched") == 0) return 0x06;
+    if (strcasecmp(name, "Labels") == 0 || strcasecmp(name, "Label") == 0) return 0x07;
+    if (strcasecmp(name, "Bond") == 0) return 0x08;
+    if (strcasecmp(name, "Cardstock") == 0 || strcasecmp(name, "Card") == 0) return 0x09;
+    if (strcasecmp(name, "Thick") == 0 || strcasecmp(name, "Thick Paper") == 0) return 0x0C;
+    if (strcasecmp(name, "Thick160") == 0) return 0x0D;
+    if (strcasecmp(name, "Envelope") == 0) return 0x0E;
+    if (strcasecmp(name, "Thin") == 0 || strcasecmp(name, "Thin Paper") == 0) return 0x0F;
+    if (strcasecmp(name, "Plain90") == 0) return 0x10;
+    if (strcasecmp(name, "Thinner") == 0) return 0x12;
+    return 0x01; /* default Plain */
+}
+
+static uint8_t cups_media_position_to_tray(unsigned int cupsMediaPosition)
+{
+    switch (cupsMediaPosition) {
+        case 1: return 0x02; /* Tray 1 */
+        case 2: return 0x03; /* Tray 2 */
+        case 3: return 0x04; /* Tray 3 */
+        case 4: return 0x01; /* Bypass / Manual */
+        case 5: return 0x05; /* Tray 4 / Fallback */
+        default: return 0x00; /* Auto */
+    }
+}
+
+static uint8_t cups_media_type_to_paper_type(unsigned int cupsMediaType)
+{
+    switch (cupsMediaType) {
+        case 0: return 0x01; /* Plain */
+        case 1: return 0x0C; /* Thick */
+        case 2: return 0x0F; /* Thin */
+        case 3: return 0x02; /* Recycled */
+        case 4: return 0x0E; /* Envelope */
+        case 5: return 0x07; /* Labels */
+        default: return 0x01; /* default Plain */
+    }
 }
 
 /* --- Byte writers ---------------------------------------------------- */
@@ -383,18 +461,29 @@ static void write_gdij(FILE *out, unsigned bit_height, int color,
 }
 
 static void write_gdip(FILE *out, unsigned width, unsigned height,
-                       int color, uint8_t media_code, unsigned page_side,
-                       unsigned band_count,
+                       int color, uint8_t media_code, uint8_t tray_code, uint8_t paper_type,
+                       int duplex, unsigned page_index, unsigned band_count,
                        unsigned page_w_points, unsigned page_h_points)
 {
     uint8_t buf[GDIP_LEN] = {0};
     memcpy(buf + 0x00, MAGIC_GDIP, 4);
     put_be32(buf + 0x04, GDIP_LEN);
+    buf[0x08] = media_code;
+    buf[0x09] = tray_code;
+    buf[0x0A] = paper_type;
+    /* buf[0x0B] is reserved (zero) */
     put_be16(buf + 0x0C, (uint16_t)width);
     put_be16(buf + 0x0E, (uint16_t)height);
     buf[0x20] = color ? 0x04 : 0x01;
-    buf[0x21] = media_code;
-    put_be16(buf + 0x22, (uint16_t)page_side);
+    
+    if (duplex) {
+        buf[0x21] = (page_index % 2 == 0) ? 0x05 : 0x0D;
+        put_be16(buf + 0x22, (uint16_t)(page_index ^ 1));
+    } else {
+        buf[0x21] = 0x01;
+        put_be16(buf + 0x22, (uint16_t)page_index);
+    }
+    
     put_be16(buf + 0x36, (uint16_t)band_count);
     put_be32(buf + 0x38, page_w_points);
     put_be32(buf + 0x3C, page_h_points);
@@ -485,8 +574,17 @@ int main(int argc, char *argv[])
 
     char media_name[64];
     opt_value(opts, "PageSize", media_name, sizeof(media_name));
+    if (!media_name[0]) opt_value(opts, "media", media_name, sizeof(media_name));
     if (!media_name[0]) strcpy(media_name, "A4");
     uint8_t media = media_code_for(media_name);
+
+    char tray_name[64];
+    opt_value(opts, "InputSlot", tray_name, sizeof(tray_name));
+    if (!tray_name[0]) opt_value(opts, "InputTray", tray_name, sizeof(tray_name));
+
+    char type_name[64];
+    opt_value(opts, "MediaType", type_name, sizeof(type_name));
+    if (!type_name[0]) opt_value(opts, "PaperType", type_name, sizeof(type_name));
 
     char duplex_s[16];
     opt_value(opts, "Duplex", duplex_s, sizeof(duplex_s));
@@ -587,8 +685,11 @@ int main(int argc, char *argv[])
         unsigned band_count = (h + BAND_HEIGHT - 1) / BAND_HEIGHT;
         unsigned page_w_points = (unsigned)hdr.cupsPageSize[0];
         unsigned page_h_points = (unsigned)hdr.cupsPageSize[1];
-        write_gdip(stdout, pad_w, h, color, media,
-                   page_index, band_count,
+        uint8_t tray_code = tray_name[0] ? tray_code_for(tray_name) : cups_media_position_to_tray(hdr.MediaPosition);
+        uint8_t paper_type = type_name[0] ? paper_type_code_for(type_name) : cups_media_type_to_paper_type(hdr.cupsMediaType);
+
+        write_gdip(stdout, pad_w, h, color, media, tray_code, paper_type,
+                   duplex, page_index, band_count,
                    page_w_points, page_h_points);
 
         /* Encode each band. Four CMYK planes are independent so we

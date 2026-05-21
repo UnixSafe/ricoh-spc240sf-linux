@@ -53,10 +53,13 @@ def dump(path: str) -> int:
             off += length
         elif magic == b"GDIP":
             length = be32(data, off + 4)
+            media = data[off + 0x08]
+            tray = data[off + 0x09]
+            paper_type = data[off + 0x0A]
             w = be16(data, off + 0x0C)
             h = be16(data, off + 0x0E)
             channels = data[off + 0x20]
-            media = data[off + 0x21]
+            duplex_status = data[off + 0x21]
             side = be16(data, off + 0x22)
             bands = be16(data, off + 0x36)
             pw = be32(data, off + 0x38)
@@ -65,7 +68,8 @@ def dump(path: str) -> int:
             band = 0
             print(
                 f"@{off:08x} GDIP page={page} len={length} {w}x{h} ch={channels} "
-                f"media=0x{media:02x} side={side} bands={bands} pagesize={pw}x{ph}"
+                f"media=0x{media:02x} tray=0x{tray:02x} type=0x{paper_type:02x} "
+                f"duplex=0x{duplex_status:02x} side={side} bands={bands} pagesize={pw}x{ph}"
             )
             off += length
         elif magic == b"GDIB":

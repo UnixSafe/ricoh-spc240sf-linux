@@ -1,6 +1,6 @@
 *PPD-Adobe: "4.3"
 *% PPD for the Ricoh Aficio SP C240SF on Linux (CUPS) using rastertoddst.
-*% Reverse-engineered DDST/GDI implementation, 2026-05-20.
+*% Community DDST/GDI driver, 2026-05-21.
 *FormatVersion: "4.3"
 *FileVersion: "1.0"
 *LanguageVersion: English
@@ -52,8 +52,10 @@
 *% --- Paper sources -------------------------------------------------------
 *OpenUI *InputSlot/Paper Source: PickOne
 *OrderDependency: 30 AnySetup *InputSlot
-*DefaultInputSlot: Tray1
+*DefaultInputSlot: Auto
+*InputSlot Auto/Auto Select: "<</MediaPosition 0>>setpagedevice"
 *InputSlot Tray1/Tray 1: "<</MediaPosition 1>>setpagedevice"
+*InputSlot Tray2/Tray 2: "<</MediaPosition 2>>setpagedevice"
 *InputSlot Bypass/Bypass Tray: "<</MediaPosition 4>>setpagedevice"
 *CloseUI: *InputSlot
 
@@ -70,10 +72,10 @@
 *PageSize A6/A6: "<</PageSize[298 420]/ImagingBBox null>>setpagedevice"
 *PageSize Executive/Executive: "<</PageSize[522 756]/ImagingBBox null>>setpagedevice"
 *PageSize Env10/Envelope #10: "<</PageSize[297 684]/ImagingBBox null>>setpagedevice"
-*PageSize Monarch/Envelope Monarch: "<</PageSize[279 540]/ImagingBBox null>>setpagedevice"
-*PageSize DL/Envelope DL: "<</PageSize[312 624]/ImagingBBox null>>setpagedevice"
-*PageSize C5/Envelope C5: "<</PageSize[459 649]/ImagingBBox null>>setpagedevice"
-*PageSize C6/Envelope C6: "<</PageSize[323 459]/ImagingBBox null>>setpagedevice"
+*PageSize EnvMonarch/Envelope Monarch: "<</PageSize[279 540]/ImagingBBox null>>setpagedevice"
+*PageSize EnvDL/Envelope DL: "<</PageSize[312 624]/ImagingBBox null>>setpagedevice"
+*PageSize EnvC5/Envelope C5: "<</PageSize[459 649]/ImagingBBox null>>setpagedevice"
+*PageSize EnvC6/Envelope C6: "<</PageSize[323 459]/ImagingBBox null>>setpagedevice"
 *PageSize Postcard/Postcard: "<</PageSize[284 419]/ImagingBBox null>>setpagedevice"
 *CloseUI: *PageSize
 
@@ -89,10 +91,10 @@
 *PageRegion A6/A6: "<</PageSize[298 420]/ImagingBBox null>>setpagedevice"
 *PageRegion Executive/Executive: "<</PageSize[522 756]/ImagingBBox null>>setpagedevice"
 *PageRegion Env10/Envelope #10: "<</PageSize[297 684]/ImagingBBox null>>setpagedevice"
-*PageRegion Monarch/Envelope Monarch: "<</PageSize[279 540]/ImagingBBox null>>setpagedevice"
-*PageRegion DL/Envelope DL: "<</PageSize[312 624]/ImagingBBox null>>setpagedevice"
-*PageRegion C5/Envelope C5: "<</PageSize[459 649]/ImagingBBox null>>setpagedevice"
-*PageRegion C6/Envelope C6: "<</PageSize[323 459]/ImagingBBox null>>setpagedevice"
+*PageRegion EnvMonarch/Envelope Monarch: "<</PageSize[279 540]/ImagingBBox null>>setpagedevice"
+*PageRegion EnvDL/Envelope DL: "<</PageSize[312 624]/ImagingBBox null>>setpagedevice"
+*PageRegion EnvC5/Envelope C5: "<</PageSize[459 649]/ImagingBBox null>>setpagedevice"
+*PageRegion EnvC6/Envelope C6: "<</PageSize[323 459]/ImagingBBox null>>setpagedevice"
 *PageRegion Postcard/Postcard: "<</PageSize[284 419]/ImagingBBox null>>setpagedevice"
 *CloseUI: *PageRegion
 
@@ -106,10 +108,10 @@
 *ImageableArea A6: "12 12 286 408"
 *ImageableArea Executive: "12 12 510 744"
 *ImageableArea Env10: "12 12 285 672"
-*ImageableArea Monarch: "12 12 267 528"
-*ImageableArea DL: "12 12 300 612"
-*ImageableArea C5: "12 12 447 637"
-*ImageableArea C6: "12 12 311 447"
+*ImageableArea EnvMonarch: "12 12 267 528"
+*ImageableArea EnvDL: "12 12 300 612"
+*ImageableArea EnvC5: "12 12 447 637"
+*ImageableArea EnvC6: "12 12 311 447"
 *ImageableArea Postcard: "12 12 272 407"
 
 *DefaultPaperDimension: A4
@@ -122,10 +124,10 @@
 *PaperDimension A6: "298 420"
 *PaperDimension Executive: "522 756"
 *PaperDimension Env10: "297 684"
-*PaperDimension Monarch: "279 540"
-*PaperDimension DL: "312 624"
-*PaperDimension C5: "459 649"
-*PaperDimension C6: "323 459"
+*PaperDimension EnvMonarch: "279 540"
+*PaperDimension EnvDL: "312 624"
+*PaperDimension EnvC5: "459 649"
+*PaperDimension EnvC6: "323 459"
 *PaperDimension Postcard: "284 419"
 
 *% --- Media type ----------------------------------------------------------
