@@ -107,6 +107,11 @@ python3 parse_ddst.py /tmp/out.bin
   halftone screens are welcome.
 * Real-hardware testing reports welcome via the issue tracker.
 
+## Troubleshooting
+
+See [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) for installation checks,
+CUPS diagnostics, and USB troubleshooting.
+
 ## License
 
 GPL-2.0-or-later. See `LICENSE`.

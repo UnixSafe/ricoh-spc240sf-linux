@@ -261,10 +261,8 @@ static void jbig_out_cb(unsigned char *start, size_t len, void *arg)
 /* --- JBIG encode one packed-1bit MSB plane --------------------------- */
 
 /* Encodes a w×h 1-bit MSB-first packed bitmap into a BIE. The output
- * is appended to *out. Encoder parameters: order=0x03, options=0x48
- * (LRLTWO | TPDON), L0=256. The printer's DDST/JBIG decoder expects the
- * BIH options byte to be 0x48; TPDON is a no-op on this single-layer
- * image, but the byte must still carry it. */
+ * is appended to *out. Encoder parameters: order=0x03,
+ * options=0x40 (JBG_LRLTWO), L0=256. */
 static void jbig_encode(buf_t *out, uint8_t *plane,
                         unsigned long w, unsigned long h)
 {
@@ -273,7 +271,7 @@ static void jbig_encode(buf_t *out, uint8_t *plane,
     struct jbg_enc_state enc;
     uint8_t *planes[1] = { plane };
     jbg_enc_init(&enc, w, h, 1, planes, jbig_out_cb, out);
-    jbg_enc_options(&enc, 0x03, 0x48, BAND_HEIGHT, 0, 0);
+    jbg_enc_options(&enc, 0x03, 0x40, BAND_HEIGHT, 0, 0);
     jbg_enc_out(&enc);
     jbg_enc_free(&enc);
 }
