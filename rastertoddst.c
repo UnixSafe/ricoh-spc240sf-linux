@@ -92,6 +92,40 @@ static uint8_t media_code_for(const char *name)
     return 0x09; /* A4 fallback (code 0x09) */
 }
 
+/* Map a page's point dimensions (from cupsPageSize) to a media size code,
+ * matching either orientation within a small tolerance. Returns 0 when the
+ * geometry does not match a known size (caller then uses the job option). */
+static uint8_t media_code_from_points(unsigned w, unsigned h)
+{
+    static const struct { unsigned w, h; uint8_t code; } sizes[] = {
+        {595,  842, 0x09}, /* A4 */
+        {612,  792, 0x01}, /* Letter */
+        {612, 1008, 0x05}, /* Legal */
+        {420,  595, 0x0B}, /* A5 */
+        {516,  729, 0x0D}, /* B5 (JIS) */
+        {363,  516, 0x58}, /* B6 (JIS) */
+        {298,  420, 0x46}, /* A6 */
+        {522,  756, 0x07}, /* Executive */
+        {297,  684, 0x14}, /* Env #10 */
+        {279,  540, 0x25}, /* Env Monarch */
+        {312,  624, 0x1B}, /* Env DL */
+        {459,  649, 0x1C}, /* Env C5 */
+        {323,  459, 0x1F}, /* Env C6 */
+        {284,  419, 0x2B}, /* Postcard */
+    };
+    const unsigned tol = 3;  /* cupsPageSize is float; truncation loses ~1pt */
+    for (size_t i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++) {
+        unsigned sw = sizes[i].w, sh = sizes[i].h;
+        int portrait  = (w + tol >= sw && w <= sw + tol &&
+                         h + tol >= sh && h <= sh + tol);
+        int landscape = (w + tol >= sh && w <= sh + tol &&
+                         h + tol >= sw && h <= sw + tol);
+        if (portrait || landscape)
+            return sizes[i].code;
+    }
+    return 0;
+}
+
 static uint8_t tray_code_for(const char *name)
 {
     if (strcasecmp(name, "Automatic") == 0 || strcasecmp(name, "Auto") == 0)
@@ -445,13 +479,20 @@ static void write_gdij(FILE *out, unsigned bit_height, int color,
     buf[0x08] = 0x00;
     buf[0x09] = 0x64;  /* format version 100 */
     put_be16(buf + 0x0A, (uint16_t)bit_height);
-    put_be16(buf + 0x10, (duplex && collate) ? 0x0208 : 0x0800);
+    /* 0x10 = duplex byte (0x00 simplex, 0x02 duplex);
+     * 0x11 = collate byte (0x00 off, 0x08 on). The two are independent —
+     * collate does not gate duplex. */
+    buf[0x10] = duplex ? 0x02 : 0x00;
+    buf[0x11] = collate ? 0x08 : 0x00;
     put_be16(buf + 0x12, 0x00A8);
     put_be32(buf + 0x14, (uint32_t)getpid());
     buf[0x18] = color ? 0x01 : 0x00;
-    /* ditherBPP-1 in high byte; low byte holds depth bit (= 1 for 1bpp) */
-    put_be16(buf + 0x20, (uint16_t)(((0 & 0xFF) << 8) | 0x01));
-    put_be16(buf + 0x22, 0x0200);
+    /* 0x20 = 0x01 (constant); 0x21 = ditherBPP-1 (0 for 1-bit halftone). */
+    buf[0x20] = 0x01;
+    buf[0x21] = 0x00;
+    /* 0x22/0x23: constant 0x0200 stored little-endian -> bytes 0x00 0x02. */
+    buf[0x22] = 0x00;
+    buf[0x23] = 0x02;
 
     char host[64] = {0};
     if (gethostname(host, sizeof(host) - 1) != 0)
@@ -476,12 +517,20 @@ static void write_gdip(FILE *out, unsigned width, unsigned height,
     put_be16(buf + 0x0E, (uint16_t)height);
     buf[0x20] = color ? 0x04 : 0x01;
     
+    /* Face marker (0x21) and side index (0x22). cups_page is the 1-based CUPS
+     * page number (page_index is 0-based, so +1).
+     *   simplex: face 0x01, side = cups_page.
+     *   duplex : face = (cups_page even) ? 0x05 : 0x0D;
+     *            side = (cups_page odd) ? cups_page-1 : cups_page+1  (pair-swapped,
+     *            e.g. pages 1,2,3,4 -> sides 0,3,2,5). */
+    unsigned cups_page = page_index + 1;
     if (duplex) {
-        buf[0x21] = (page_index % 2 == 0) ? 0x05 : 0x0D;
-        put_be16(buf + 0x22, (uint16_t)(page_index ^ 1));
+        buf[0x21] = (cups_page % 2 == 0) ? 0x05 : 0x0D;
+        unsigned side = (cups_page & 1u) ? (cups_page - 1) : (cups_page + 1);
+        put_be16(buf + 0x22, (uint16_t)side);
     } else {
         buf[0x21] = 0x01;
-        put_be16(buf + 0x22, (uint16_t)page_index);
+        put_be16(buf + 0x22, (uint16_t)cups_page);
     }
     
     put_be16(buf + 0x36, (uint16_t)band_count);
@@ -576,7 +625,7 @@ int main(int argc, char *argv[])
     opt_value(opts, "PageSize", media_name, sizeof(media_name));
     if (!media_name[0]) opt_value(opts, "media", media_name, sizeof(media_name));
     if (!media_name[0]) strcpy(media_name, "A4");
-    uint8_t media = media_code_for(media_name);
+    uint8_t media_opt = media_code_for(media_name);  /* job-level fallback */
 
     char tray_name[64];
     opt_value(opts, "InputSlot", tray_name, sizeof(tray_name));
@@ -685,6 +734,11 @@ int main(int argc, char *argv[])
         unsigned band_count = (h + BAND_HEIGHT - 1) / BAND_HEIGHT;
         unsigned page_w_points = (unsigned)hdr.cupsPageSize[0];
         unsigned page_h_points = (unsigned)hdr.cupsPageSize[1];
+        /* Prefer the media code matching this page's actual geometry so a
+         * mixed-size job feeds the right size on each page; fall back to the
+         * job-level PageSize option when the geometry is unrecognised. */
+        uint8_t media_pg = media_code_from_points(page_w_points, page_h_points);
+        uint8_t media = media_pg ? media_pg : media_opt;
         uint8_t tray_code = tray_name[0] ? tray_code_for(tray_name) : cups_media_position_to_tray(hdr.MediaPosition);
         uint8_t paper_type = type_name[0] ? paper_type_code_for(type_name) : cups_media_type_to_paper_type(hdr.cupsMediaType);
 

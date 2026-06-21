@@ -39,7 +39,8 @@ def dump(path: str) -> int:
             length = be32(data, off + 4)
             version = data[off + 9]
             height = be16(data, off + 0xA)
-            flags = be16(data, off + 0x10)
+            duplex_b = data[off + 0x10]   # 0x00 simplex, 0x02 duplex
+            collate_b = data[off + 0x11]  # 0x00 off, 0x08 on
             const = be16(data, off + 0x12)
             pid = be32(data, off + 0x14)
             color = data[off + 0x18]
@@ -47,8 +48,8 @@ def dump(path: str) -> int:
             host = data[off + 0x38 : off + 0x78].rstrip(b"\0").decode("latin-1", "replace")
             print(
                 f"@{off:08x} GDIJ len={length} version=0x{version:02x} bitHeight={height} "
-                f"flags=0x{flags:04x} const=0x{const:04x} pid={pid} color={color} "
-                f"bpp_flag=0x{bpp_flag:04x} host={host!r}"
+                f"duplex=0x{duplex_b:02x} collate=0x{collate_b:02x} const=0x{const:04x} "
+                f"pid={pid} color={color} bpp_flag=0x{bpp_flag:04x} host={host!r}"
             )
             off += length
         elif magic == b"GDIP":
