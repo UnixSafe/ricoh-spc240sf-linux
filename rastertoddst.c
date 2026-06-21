@@ -260,22 +260,35 @@ static void jbig_out_cb(unsigned char *start, size_t len, void *arg)
 
 /* --- JBIG encode one packed-1bit MSB plane --------------------------- */
 
-/* Encodes a w×h 1-bit MSB-first packed bitmap into a BIE. The output
- * is appended to *out. Encoder parameters: order=0x03, options=0x48
- * (LRLTWO | TPDON), L0=256. The printer's DDST/JBIG decoder expects the
- * BIH options byte to be 0x48; TPDON is a no-op on this single-layer
- * image, but the byte must still carry it. */
+/* Encodes a w×h 1-bit MSB-first packed bitmap into a BIE, appended to *out.
+ * Encoder parameters: order=0x03, options=0x40 (JBG_LRLTWO), L0=256.
+ *
+ * The encoded plane is then zero-padded so that the data following the
+ * 20-byte BIH is a whole number of 32-byte units: the printer expects each
+ * plane's payload aligned to 32 bytes, and an unaligned length desyncs its
+ * band parser. */
 static void jbig_encode(buf_t *out, uint8_t *plane,
                         unsigned long w, unsigned long h)
 {
     if (w == 0 || h == 0)
         return;
+    size_t start = out->size;
     struct jbg_enc_state enc;
     uint8_t *planes[1] = { plane };
     jbg_enc_init(&enc, w, h, 1, planes, jbig_out_cb, out);
-    jbg_enc_options(&enc, 0x03, 0x48, BAND_HEIGHT, 0, 0);
+    jbg_enc_options(&enc, 0x03, 0x40, BAND_HEIGHT, 0, 0);
     jbg_enc_out(&enc);
     jbg_enc_free(&enc);
+
+    size_t len = out->size - start;          /* BIH (20) + BID */
+    if (len > 20) {
+        size_t bid = len - 20;
+        size_t pad = ((bid + 31u) & ~(size_t)31u) - bid;
+        if (pad) {
+            static const uint8_t zeros[32] = {0};
+            buf_append(out, zeros, pad);
+        }
+    }
 }
 
 /* --- Bayer 8×8 ordered dither, 8bpp coverage → 1bit MSB --------------- */
