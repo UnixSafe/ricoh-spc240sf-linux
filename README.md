@@ -36,13 +36,22 @@ encoding.
 ```
 git clone https://github.com/UnixSafe/ricoh-spc240sf-linux
 cd ricoh-spc240sf-linux
-sudo ./install.sh                          # USB: relies on udev auto-register
+
+# USB (Zorin OS / Ubuntu): plug the printer in, power it on, then:
+sudo ./install-usb.sh                      # auto-detects the USB printer
+
+# Or the generic installer:
+sudo ./install.sh                          # USB via udev auto-register
 sudo ./install.sh socket://IP:9100         # network: explicit URI
 ```
 
-`install.sh` apt-installs the build dependencies, compiles the filter,
-deploys it together with the PPD and the udev rule, and optionally
-creates the CUPS queue.
+`install-usb.sh` is the easiest path: it installs the dependencies, builds
+and deploys the filter + PPD, **auto-detects the USB-connected printer**,
+creates the CUPS queue, and offers to print a test page — no URI to type.
+
+`install.sh` is the generic variant: it does the same build/deploy and
+either takes an explicit URI or relies on the bundled udev rule to
+auto-register the queue on USB plug-in.
 
 ## Manual install
 
@@ -71,7 +80,8 @@ sudo apt install ../ricoh-spc240sf-driver_1.0.0-1_amd64.deb
 | `rastertoddst.c` | CUPS filter source. |
 | `Ricoh-Aficio_SP_C240SF-rastertoddst.ppd` | PPD: paper, trays, duplex, color. |
 | `Makefile` | `make`, `make install`, `make deb`. |
-| `install.sh` | One-shot installer. |
+| `install-usb.sh` | USB installer — auto-detects the printer. |
+| `install.sh` | Generic installer (USB udev / network URI). |
 | `debian/` | Debian source package, postinst, prerm, udev rule. |
 | `parse_ddst.py` | Output validator. |
 | `make_test_raster.py` | Synthesize a CUPS raster page for testing. |
