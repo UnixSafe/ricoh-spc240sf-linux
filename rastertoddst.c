@@ -261,8 +261,10 @@ static void jbig_out_cb(unsigned char *start, size_t len, void *arg)
 /* --- JBIG encode one packed-1bit MSB plane --------------------------- */
 
 /* Encodes a w×h 1-bit MSB-first packed bitmap into a BIE. The output
- * is appended to *out. Encoder parameters: order=0x03, options=0x40,
- * L0=256. */
+ * is appended to *out. Encoder parameters: order=0x03, options=0x48
+ * (LRLTWO | TPDON), L0=256. The printer's DDST/JBIG decoder expects the
+ * BIH options byte to be 0x48; TPDON is a no-op on this single-layer
+ * image, but the byte must still carry it. */
 static void jbig_encode(buf_t *out, uint8_t *plane,
                         unsigned long w, unsigned long h)
 {
@@ -271,7 +273,7 @@ static void jbig_encode(buf_t *out, uint8_t *plane,
     struct jbg_enc_state enc;
     uint8_t *planes[1] = { plane };
     jbg_enc_init(&enc, w, h, 1, planes, jbig_out_cb, out);
-    jbg_enc_options(&enc, 0x03, 0x40, BAND_HEIGHT, 0, 0);
+    jbg_enc_options(&enc, 0x03, 0x48, BAND_HEIGHT, 0, 0);
     jbg_enc_out(&enc);
     jbg_enc_free(&enc);
 }
@@ -470,7 +472,7 @@ static void write_gjet(FILE *out, const char *user, const char *title)
     fwrite(buf, 1, GJET_LEN, out);
 }
 
-static void write_gdij(FILE *out, unsigned bit_height, int color,
+static void write_gdij(FILE *out, unsigned copies, int color,
                        int duplex, int collate)
 {
     uint8_t buf[GDIJ_LEN] = {0};
@@ -478,7 +480,11 @@ static void write_gdij(FILE *out, unsigned bit_height, int color,
     put_be32(buf + 0x04, GDIJ_LEN);
     buf[0x08] = 0x00;
     buf[0x09] = 0x64;  /* format version 100 */
-    put_be16(buf + 0x0A, (uint16_t)bit_height);
+    /* 0x0A: job copy count (big-endian u16), from the raster header's
+     * NumCopies. This field is the number of copies, NOT the page
+     * bit-height; writing the pixel height here put an out-of-range value
+     * in the copy field. */
+    put_be16(buf + 0x0A, (uint16_t)copies);
     /* 0x10 = duplex byte (0x00 simplex, 0x02 duplex);
      * 0x11 = collate byte (0x00 off, 0x08 on). The two are independent —
      * collate does not gate duplex. */
@@ -727,7 +733,8 @@ int main(int argc, char *argv[])
         /* Emit headers on first page. */
         if (!sent_job_headers) {
             write_gjet(stdout, user, title);
-            write_gdij(stdout, h, color, duplex, collate);
+            write_gdij(stdout, hdr.NumCopies ? hdr.NumCopies : 1,
+                       color, duplex, collate);
             sent_job_headers = 1;
         }
 

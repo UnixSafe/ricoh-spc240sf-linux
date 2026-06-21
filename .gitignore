@@ -31,3 +31,6 @@ debian/debhelper-build-stamp
 *.raster
 *.pbm
 *.jbig
+
+# Local-only material, not distributed
+another-os/
