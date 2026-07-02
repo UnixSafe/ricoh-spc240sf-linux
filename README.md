@@ -1,57 +1,41 @@
-# ricoh-spc240sf-linux
+# Ricoh Aficio SP C240SF — Linux printer driver
 
-Unofficial Linux driver for the Ricoh Aficio SP C240SF color laser MFP.
+Native C CUPS filter (`rastertoddst`) + PPD + udev auto-registration for
+the Ricoh Aficio SP C240SF color laser MFP on Zorin OS / Ubuntu / Debian.
 
-Provides a native C CUPS filter (`rastertoddst`), a PPD with paper sizes,
-trays, duplex and color modes, a Debian package, and a udev rule that
-auto-registers the printer in CUPS when plugged via USB.
-
-This is an independent community driver. It is not endorsed by or
-affiliated with Ricoh.
-
-## Why
-
-The vendor stopped shipping Linux drivers for this printer family. This
-project keeps the hardware usable on modern distributions (Zorin OS,
-Ubuntu, Debian and derivatives).
+Reverse-engineered from the macOS RicohAficioSPC240SFFilter binary; the
+SP C240SF speaks a proprietary "DDST" binary protocol with `GJET`,
+`GDIJ`, `GDIP`, `GDIB` headers wrapping per-plane (CMYK) JBIG payloads.
+The wire format is documented in [`DDST_FORMAT.md`](DDST_FORMAT.md).
 
 ## Performance
 
-Native C, multi-threaded: the four CMYK image planes of each band are
-encoded in parallel.
+Measured on a 4-core x86_64 with a synthetic A4 600 dpi CMYK page
+(4960 × 7016 pixels, ~133 MB raster):
 
-Measured on a 4-core x86_64 host with a synthetic A4 600 dpi CMYK page
-(4960 × 7016 pixels, ~133 MB raw raster):
+| Build       | Wall time | CPU usage |
+|-------------|-----------|-----------|
+| Python      | ~30 s     | 100 %     |
+| C, single-threaded | 0.79 s    | 65 %      |
+| C, multi-threaded  | **0.17 s** | **290 %** |
 
-| Build                    | Wall time | CPU usage |
-|--------------------------|-----------|-----------|
-| Single-threaded          | 0.79 s    | 65 %      |
-| Multi-threaded (default) | **0.17 s** | **290 %** |
-
+The filter encodes the four CMYK JBIG planes of each band in parallel.
 Set `RASTERTODDST_THREADS=0` in the job environment to force serial
-encoding.
+encoding (useful for diagnosing crashes).
 
 ## One-shot install
 
 ```
-git clone https://github.com/UnixSafe/ricoh-spc240sf-linux
-cd ricoh-spc240sf-linux
-
-# USB (Zorin OS / Ubuntu): plug the printer in, power it on, then:
-sudo ./install-usb.sh                      # auto-detects the USB printer
-
-# Or the generic installer:
-sudo ./install.sh                          # USB via udev auto-register
-sudo ./install.sh socket://IP:9100         # network: explicit URI
+git clone <this repo>
+cd driver_ricoh_linux
+sudo ./install.sh                          # auto-detects USB device
+sudo ./install.sh socket://IP:9100         # explicit network URI
 ```
 
-`install-usb.sh` is the easiest path: it installs the dependencies, builds
-and deploys the filter + PPD, **auto-detects the USB-connected printer**,
-creates the CUPS queue, and offers to print a test page — no URI to type.
-
-`install.sh` is the generic variant: it does the same build/deploy and
-either takes an explicit URI or relies on the bundled udev rule to
-auto-register the queue on USB plug-in.
+`install.sh` apt-installs the build deps, compiles `rastertoddst`,
+deploys the filter / PPD / udev rule and (optionally) creates the CUPS
+queue. With the printer plugged via USB, the udev rule auto-registers
+the queue on first plug — no `lpadmin` call needed.
 
 ## Manual install
 
@@ -67,46 +51,62 @@ sudo lpadmin -p RicohSPC240SF -E \
 
 ## Build a .deb
 
+On the target host (Zorin OS / Ubuntu):
+
 ```
 sudo apt install devscripts debhelper
 make deb
 sudo apt install ../ricoh-spc240sf-driver_1.0.0-1_amd64.deb
 ```
 
-## Repository layout
+The package handles install / uninstall cleanly, drops the udev rule,
+reloads CUPS, and removes orphaned queues on `apt purge`.
 
-| Path | Role |
+## What's in the box
+
+| File | Role |
 |------|------|
-| `rastertoddst.c` | CUPS filter source. |
-| `Ricoh-Aficio_SP_C240SF-rastertoddst.ppd` | PPD: paper, trays, duplex, color. |
+| `rastertoddst.c` | The CUPS filter source (multi-threaded C). |
+| `Ricoh-Aficio_SP_C240SF-rastertoddst.ppd` | PPD with paper, trays, duplex, color modes. |
 | `Makefile` | `make`, `make install`, `make deb`. |
-| `install-usb.sh` | USB installer — auto-detects the printer. |
-| `install.sh` | Generic installer (USB udev / network URI). |
-| `debian/` | Debian source package, postinst, prerm, udev rule. |
-| `parse_ddst.py` | Output validator. |
+| `install.sh` | One-shot installer (apt + make + lpadmin). |
+| `debian/` | Source package, postinst, prerm, udev rule, auto-register helper. |
+| `parse_ddst.py` | DDST stream validator (decodes headers). |
 | `make_test_raster.py` | Synthesize a CUPS raster page for testing. |
+| `DDST_FORMAT.md` | Wire-format reverse-engineering notes. |
+| `COMPARISON.md` | Cross-check vs. open-source mono Ricoh drivers. |
+| `ANALYSE_COMPATIBILITE.md` | Evidence-backed compatibility diagnosis and target checks. |
 
-## Smoke test without the printer
+## Testing without the printer
 
 ```
 python3 make_test_raster.py > /tmp/page.raster
-./rastertoddst 1 user "title" 1 "PageSize=A4 ColorModel=RGB" \
-    /tmp/page.raster > /tmp/out.bin
-python3 parse_ddst.py /tmp/out.bin
+./rastertoddst 1 user "title" 1 "PageSize=A4 ColorModel=RGB" /tmp/page.raster > /tmp/out.ddst
+python3 parse_ddst.py /tmp/out.ddst
 ```
+
+Expected: GJET → GDIJ → GDIP → GDIB(K,Y,M,C) → JIDG with consistent
+plane sizes and a final JIDG terminator.
 
 ## Status
 
-* Multi-threaded C filter — done.
-* PPD with A4 / Letter / Legal / A5 / B5 / B6 / A6 / Executive /
-  envelopes / postcard, duplex, two trays — done.
-* One-shot installer and Debian package — done.
-* USB auto-registration via udev — done.
-* Halftoning uses a Bayer 8×8 ordered dither. Print quality is correct
-  but not as fine as the vendor driver. Pull requests with better
-  halftone screens are welcome.
-* Real-hardware testing reports welcome via the issue tracker.
+* ✅ Wire format cross-checked against the Mac driver's static header layouts.
+* ✅ Multi-threaded C implementation.
+* ✅ One-shot Zorin OS install + .deb package.
+* ✅ Udev auto-registration on USB plug.
+* ⚠️  Halftoning uses a Bayer 8×8 matrix. The Windows driver ships
+  proprietary halftone screens (`gfegs{c,m,y,k}{1,2,4}.bin`) that
+  produce nicer output. Print quality is correct but not optimal.
+* ⚠️  Real-hardware testing is required to confirm bit-exact
+  compatibility with the printer's firmware.
 
-## License
+See [`ANALYSE_COMPATIBILITE.md`](ANALYSE_COMPATIBILITE.md) for the
+confirmed corrections, remaining risks, and CUPS diagnostics.
 
-GPL-2.0-or-later. See `LICENSE`.
+## Performance knobs
+
+| Knob | Effect |
+|------|--------|
+| `RASTERTODDST_THREADS=0` | Disable parallel JBIG encoding (debug). |
+| `make CFLAGS=-O3` | Slight gain on the halftone inner loop. |
+| `make CFLAGS="-O3 -march=native"` | Best on the target machine. |

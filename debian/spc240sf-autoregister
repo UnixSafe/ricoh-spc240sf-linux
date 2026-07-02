@@ -8,15 +8,24 @@ set -e
 PPD="/usr/share/cups/model/Ricoh-Aficio_SP_C240SF-rastertoddst.ppd"
 QUEUE="RicohSPC240SF"
 
-# Wait briefly for CUPS to enumerate the USB scheme.
-for _ in 1 2 3 4 5; do
+# CUPS often takes longer than five seconds to expose a newly added USB
+# device. udev does not replay the same add event, so wait up to 30 seconds
+# instead of assuming that it will retry this helper.
+URI=""
+i=0
+while [ "$i" -lt 30 ]; do
     URI=$(lpinfo -v 2>/dev/null \
         | awk '/^direct usb:.*SP_C240SF/ || /^direct usb:.*C240/ {print $2; exit}')
     [ -n "$URI" ] && break
+    i=$((i + 1))
     sleep 1
 done
 
-[ -z "$URI" ] && exit 0   # device not discoverable yet; udev will retry
+if [ -z "$URI" ]; then
+    logger -t spc240sf-autoregister \
+        "CUPS did not expose a USB URI within 30 seconds; run install-usb.sh"
+    exit 0
+fi
 
 # Already registered?
 if lpstat -v 2>/dev/null | grep -q "device for $QUEUE:"; then

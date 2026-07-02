@@ -260,35 +260,21 @@ static void jbig_out_cb(unsigned char *start, size_t len, void *arg)
 
 /* --- JBIG encode one packed-1bit MSB plane --------------------------- */
 
-/* Encodes a w×h 1-bit MSB-first packed bitmap into a BIE, appended to *out.
- * Encoder parameters: order=0x03, options=0x40 (JBG_LRLTWO), L0=256.
- *
- * The encoded plane is then zero-padded so that the data following the
- * 20-byte BIH is a whole number of 32-byte units: the printer expects each
- * plane's payload aligned to 32 bytes, and an unaligned length desyncs its
- * band parser. */
+/* Encodes a w×h 1-bit MSB-first packed bitmap into a BIE. The output
+ * is appended to *out. Encoder parameters: order=0x03,
+ * options=0x40 (JBG_LRLTWO), L0=256. This matches the macOS driver's
+ * djz_Compress invocation for each single-plane band. */
 static void jbig_encode(buf_t *out, uint8_t *plane,
                         unsigned long w, unsigned long h)
 {
     if (w == 0 || h == 0)
         return;
-    size_t start = out->size;
     struct jbg_enc_state enc;
     uint8_t *planes[1] = { plane };
     jbg_enc_init(&enc, w, h, 1, planes, jbig_out_cb, out);
     jbg_enc_options(&enc, 0x03, 0x40, BAND_HEIGHT, 0, 0);
     jbg_enc_out(&enc);
     jbg_enc_free(&enc);
-
-    size_t len = out->size - start;          /* BIH (20) + BID */
-    if (len > 20) {
-        size_t bid = len - 20;
-        size_t pad = ((bid + 31u) & ~(size_t)31u) - bid;
-        if (pad) {
-            static const uint8_t zeros[32] = {0};
-            buf_append(out, zeros, pad);
-        }
-    }
 }
 
 /* --- Bayer 8×8 ordered dither, 8bpp coverage → 1bit MSB --------------- */
@@ -493,23 +479,28 @@ static void write_gdij(FILE *out, unsigned copies, int color,
     put_be32(buf + 0x04, GDIJ_LEN);
     buf[0x08] = 0x00;
     buf[0x09] = 0x64;  /* format version 100 */
-    /* 0x0A: job copy count (big-endian u16), from the raster header's
-     * NumCopies. This field is the number of copies, NOT the page
-     * bit-height; writing the pixel height here put an out-of-range value
-     * in the copy field. */
+    /* The macOS filter reads cups_page_header2_t.NumCopies here. */
     put_be16(buf + 0x0A, (uint16_t)copies);
     /* 0x10 = duplex byte (0x00 simplex, 0x02 duplex);
-     * 0x11 = collate byte (0x00 off, 0x08 on). The two are independent —
-     * collate does not gate duplex. */
+     * 0x11 = collate byte (0x00 off, 0x08 on).
+     * Ground truth: macOS startPage (disasm_trace.txt lines 425-446). The
+     * simplex branch computes AX=collate?0x0800:0 and jumps OVER the rolw
+     * byte-swap, so it stores 0x00 at byte 0x10 and collate?0x08:0x00 at
+     * byte 0x11 (the 0x08 in the legacy "0x0800" is the collate bit, not a
+     * duplex marker). The duplex branch byte-swaps and stores 0x02 at 0x10.
+     * Collate is independent of duplex. */
     buf[0x10] = duplex ? 0x02 : 0x00;
     buf[0x11] = collate ? 0x08 : 0x00;
     put_be16(buf + 0x12, 0x00A8);
     put_be32(buf + 0x14, (uint32_t)getpid());
     buf[0x18] = color ? 0x01 : 0x00;
-    /* 0x20 = 0x01 (constant); 0x21 = ditherBPP-1 (0 for 1-bit halftone). */
+    /* 0x20/0x21: the macOS filter sets AH=0x01, AL=ditherBPP-1, byte-swaps
+     * (rolw) then stores little-endian (disasm_trace.txt 478-484), so the
+     * file bytes are [0x20]=0x01, [0x21]=ditherBPP-1. NOT a big-endian word. */
     buf[0x20] = 0x01;
-    buf[0x21] = 0x00;
-    /* 0x22/0x23: constant 0x0200 stored little-endian -> bytes 0x00 0x02. */
+    buf[0x21] = 0x00;  /* ditherBPP - 1; ditherBPP is 1 (1-bit halftone) */
+    /* 0x22/0x23: constant 0x0200 stored little-endian (disasm 486:
+     * `movw $0x200`, no byte-swap) -> file bytes [0x22]=0x00, [0x23]=0x02. */
     buf[0x22] = 0x00;
     buf[0x23] = 0x02;
 
@@ -536,12 +527,13 @@ static void write_gdip(FILE *out, unsigned width, unsigned height,
     put_be16(buf + 0x0E, (uint16_t)height);
     buf[0x20] = color ? 0x04 : 0x01;
     
-    /* Face marker (0x21) and side index (0x22). cups_page is the 1-based CUPS
-     * page number (page_index is 0-based, so +1).
+    /* Face marker (0x21) and side index (0x22) replicate the macOS filter
+     * exactly (startPage, disasm_trace.txt lines 656-688). There r15 is the
+     * 1-based CUPS page number; page_index is 0-based, so cups_page = +1.
      *   simplex: face 0x01, side = cups_page.
      *   duplex : face = (cups_page even) ? 0x05 : 0x0D;
      *            side = (cups_page odd) ? cups_page-1 : cups_page+1  (pair-swapped,
-     *            e.g. pages 1,2,3,4 -> sides 0,3,2,5). */
+     *            NOT monotonic — e.g. pages 1,2,3,4 -> sides 0,3,2,5). */
     unsigned cups_page = page_index + 1;
     if (duplex) {
         buf[0x21] = (cups_page % 2 == 0) ? 0x05 : 0x0D;

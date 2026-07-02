@@ -1,36 +1,55 @@
-# Build artifacts
+# ── Proprietary Ricoh material — NEVER commit (vendor copyright) ──
+windows/
+mac_os/
+extracted_mac/
+extracted_win/
+payload_extracted/
+RicohFilter_x86_64
+ricoh.ppd
+
+# ── Disassembly dumps of the vendor binaries — keep private ──
+disasm_trace.txt
+disasm_trace_end.txt
+djz_compress_disasm.txt
+imx_disasm.txt
+
+# ── RE analysis tooling / scratch scripts — keep private ──
+analyze_*.py
+disasm_*.py
+find_*.py
+search_stack.py
+trace_band_fields.py
+read_raster.py
+create_pdf.py
+
+# ── Third-party sources (jbigkit) — not ours to redistribute here ──
+jbigkit-2.1/
+jbigkit-2.1.tar.gz
+jbig.c
+jbig.h
+jbig_ar.c
+jbig_ar.h
+
+# ── Other projects' driver repos ──
+github_reference/
+
+# ── Build artifacts ──
 rastertoddst
+libsane-*.so
 *.o
-*.a
 *.so
 *.so.*
+__pycache__/
+*.pyc
 
-# Debian build outputs (created in the parent directory by dpkg-buildpackage)
-debian/files
-debian/.debhelper/
-debian/ricoh-spc240sf-driver/
-debian/*.debhelper.log
-debian/*.substvars
-debian/debhelper-build-stamp
-*.deb
-*.buildinfo
-*.changes
-*.dsc
-*.tar.*
-
-# Editor / OS noise
-.DS_Store
-*.swp
-*.swo
-*~
-.idea/
-.vscode/
-
-# Test artifacts
-*.ddst
+# ── Large / generated test data ──
 *.raster
+*.ddst
 *.pbm
 *.jbig
 
-# Local-only material, not distributed
-another-os/
+# ── Scratch / OS noise ──
+.DS_Store
+*.pdf
+*.log
+*_case*.txt
